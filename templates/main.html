@@ -3,19 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>Поиск билетов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        form input, form button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        form button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        form button:hover {
+            background-color: #0056b3;
+        }
+        .results {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .result {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .result:last-child {
+            border-bottom: none;
+        }
+        .result a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .result a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <h1>Aviasales Lite</h1>
-        <nav>
-            <a href="/">Главная</a>
-            <a href="/search">Поиск</a>
-        </nav>
-    </header>
-    <main>
-        {% block content %}{% endblock %}
-    </main>
+    <h1>Поиск билетов</h1>
+
+    <!-- Форма поиска -->
+    <form method="POST" action="/search">
+        <input type="text" name="destination" placeholder="Место назначения" required>
+        <input type="number" name="max_price" placeholder="Максимальная цена" required>
+        <button type="submit">Искать</button>
+    </form>
+
+    <!-- Результаты поиска -->
+    {% if results %}
+    <div class="results">
+        <h2>Результаты:</h2>
+        {% for result in results %}
+        <div class="result">
+            <p>Цена: {{ result.price }} руб.</p>
+            <p><a href="{{ result.link }}" target="_blank">Подробнее</a></p>
+        </div>
+        {% endfor %}
+    </div>
+    {% elif results is not none %}
+    <div class="results">
+        <p>Ничего не найдено.</p>
+    </div>
+    {% endif %}
 </body>
 </html>
