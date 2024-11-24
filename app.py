@@ -68,12 +68,15 @@ def login():
 
         if user and bcrypt.check_password_hash(user.password, password):
             flash('Вы успешно вошли!', 'success')
-            # Здесь можно сохранить пользователя в сессии
             return redirect(url_for('profile'))  # Перенаправление на защищенную страницу
         else:
-            flash('Неправильный email или пароль.', 'error')
+            flash(
+                'Неправильный email или пароль. <a href="/signup">Зарегистрироваться?</a>',
+                'error'
+            )
 
     return render_template('login.html')
+
 
 # Страница поиска
 @app.route('/search', methods=['GET', 'POST'])
