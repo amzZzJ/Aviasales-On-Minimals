@@ -11,6 +11,25 @@ from datetime import datetime
 import re
 
 
+class Ticket:
+    def __init__(self, departure_time, arrival_time, departure_city, arrival_city, duration, price, seats):
+        self.departure_time = departure_time
+        self.arrival_time = arrival_time
+        self.departure_city = departure_city
+        self.arrival_city = arrival_city
+        self.duration = duration
+        self.price = price
+        self.seats = seats
+
+    def __str__(self):
+        return (f"{self.departure_time}{self.departure_city}\n"
+                f"{self.arrival_time}{self.arrival_city}\n"
+                f"{self.duration}\n"
+                f"от {self.price}\n"
+                f"Доступно мест по текущей цене: {self.seats}")
+
+
+
 options = webdriver.ChromeOptions()
 driver = webdriver.Chrome(options=options)
 data = []
@@ -59,5 +78,25 @@ try:
     # link_flights.click()
     # print(link_flights)
     # time.sleep(15)
+    for flight in to:
+        try:
+            departure_time = flight.find_element(By.CLASS_NAME, 'flight-search__time--departure').text
+            arrival_time = flight.find_element(By.CLASS_NAME, 'flight-search__time--arrival').text
+            cities = flight.find_elements(By.CLASS_NAME, 'flight-search__city')
+            departure_city = cities[0].text
+            arrival_city = cities[1].text
+            duration = flight.find_element(By.CLASS_NAME, 'flight-search__duration').text
+            price = flight.find_element(By.CLASS_NAME, 'flight-search__price').text
+            seats = flight.find_element(By.CLASS_NAME, 'flight-search__seats').text
+
+            ticket = Ticket(departure_time, arrival_time, departure_city, arrival_city, duration, price, seats)
+            data.append(ticket)
+        except Exception as e:
+            print(f"Ошибка при обработке рейса: {e}")
+
+        # Вывод всех билетов
+    for ticket in data:
+        print(ticket)
+        print("-" * 50)
 finally:
     driver.quit()
