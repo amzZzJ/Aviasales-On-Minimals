@@ -7,6 +7,10 @@ app = Flask(__name__)
 def index():
     return render_template('main.html')
 
+@app.route('/profile')
+def profile():
+    return render_template('profile.html')
+
 # Страница поиска
 @app.route('/search', methods=['GET', 'POST'])
 def search():

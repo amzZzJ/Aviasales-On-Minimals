@@ -11,12 +11,30 @@
             padding: 20px;
             background-color: #f4f4f4;
         }
-        h1 {
-            text-align: center;
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #fff;
+            padding: 10px 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        header a {
+            text-decoration: none;
+            color: #007BFF;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        header a:hover {
+            text-decoration: underline;
         }
         form {
             max-width: 400px;
-            margin: 0 auto;
+            margin: 20px auto;
             padding: 20px;
             background: #fff;
             border-radius: 8px;
@@ -63,13 +81,20 @@
     </style>
 </head>
 <body>
-    <h1>Поиск билетов</h1>
+    <!-- Шапка с ссылкой на личный кабинет -->
+    <header>
+        <h1>Aviasales на манималках</h1>
+        <a href="/login">Войти</a> <!-- Ссылка на личный кабинет -->
+    </header>
 
     <!-- Форма поиска -->
     <form method="POST" action="/search">
-        <input type="text" name="destination" placeholder="Место назначения" required>
+        <input type="text" name="from" placeholder="Откуда" required>
+        <input type="text" name="to" placeholder="Куда" required>
+        <input type="date" name="date_from" placeholder="Когда туда" required>
+        <input type="date" name="date_to" placeholder="Когда обратно" required>
         <input type="number" name="max_price" placeholder="Максимальная цена" required>
-        <button type="submit">Искать</button>
+        <button type="submit">Искать!</button>
     </form>
 
     <!-- Результаты поиска -->
