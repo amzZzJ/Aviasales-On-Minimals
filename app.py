@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for, flash
 
 app = Flask(__name__)
 
@@ -12,20 +12,13 @@ def index():
 def search():
     if request.method == 'POST':
         destination = request.form['destination']
-        max_price = float(request.form['max_price'])  # Преобразуем цену в число
-
+        max_price = request.form['max_price']
         # Логика обработки запроса
-        all_results = [
+        results = [
             {"price": 4500, "link": "http://example.com/ticket1"},
-            {"price": 5000, "link": "http://example.com/ticket2"},
-            {"price": 6000, "link": "http://example.com/ticket3"}
+            {"price": 5000, "link": "http://example.com/ticket2"}
         ]
-
-        # Фильтруем результаты по максимальной цене
-        results = [result for result in all_results if result["price"] <= max_price]
-
         return render_template('main.html', results=results)
-
     return render_template('main.html', results=[])
 
 
