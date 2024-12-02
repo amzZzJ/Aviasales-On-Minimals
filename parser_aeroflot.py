@@ -138,3 +138,4 @@ try:
     print("Данные успешно сохранены в tickets.json")'''
 finally:
     driver.quit()
+    
