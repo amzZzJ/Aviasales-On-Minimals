@@ -9,7 +9,6 @@ import time
 # from dateutil.relativedelta import relativedelta
 from datetime import datetime
 import re
-import json
 
 
 class Ticket:
@@ -29,46 +28,6 @@ class Ticket:
                 f"от {self.price}\n"
                 f"Доступно мест по текущей цене: {self.seats}")
 
-
-def parse_flight_segment(lines, start_index):
-    """Парсит информацию об одном сегменте рейса."""
-    try:
-        return {
-            "Вылет": lines[start_index],
-            "Прилет": lines[start_index + 1],
-            "Перевозчик": lines[start_index + 2],
-            "Рейс": lines[start_index + 3],
-            "Самолет": lines[start_index + 4]
-        }
-    except IndexError:
-        return None
-
-
-def parse_ticket(lines):
-    """Парсит информацию о билете (с пересадкой или без)."""
-    ticket = {}
-    segments = []
-    i = 0
-    while i < len(lines):
-        segment = parse_flight_segment(lines, i)
-        if segment:
-            segments.append(segment)
-            i += 5
-            if i < len(lines) and "Пересадка" in lines[i]:
-                segments[-1]["Пересадка"] = lines[i]
-                i += 1
-        else:
-            break
-
-    if segments:
-      ticket["segments"] = segments
-
-    if len(lines) > i:
-        ticket["Общее время в пути"] = lines[i]
-        ticket["Цена"] = lines[i+1]
-        ticket["Доступные места"] = lines[i+2] if len(lines) > i + 2 else None
-
-    return ticket
 
 
 options = webdriver.ChromeOptions()
@@ -112,30 +71,32 @@ try:
                                                   "main-module__col--4.main-module__col-tablet--5."
                                                   "main-module__col--stack-below-tablet-vertical > button")
     button.click()
-    time.sleep(20)
-    flights = driver.find_elements(By.CLASS_NAME, 'flight-search')
+    time.sleep(15)
+    to = driver.find_elements(By.CLASS_NAME, 'flight-search')
     # i = 1
     # link_flights = driver.find_element(By.CSS_SELECTOR, f'#frame-0\.8446740044746548 > div:nth-child(2) > div:nth-child({i}) > div.flight-search__inner > div.col--4.col--stack-below-tablet.flight-search__btn')
     # link_flights.click()
     # print(link_flights)
     # time.sleep(15)
-    for i in flights:
-        print(i.text)
-    '''
-    flights = re.split(r'ВЫБРАТЬ РЕЙС', data)
-    tickets = []
-    for flight in flights:
-        lines = list(filter(None, map(str.strip, flight.split('\n'))))
-        if lines:
-            ticket = parse_ticket(lines)
-            if ticket:
-                tickets.append(ticket)
+    for flight in to:
+        try:
+            departure_time = flight.find_element(By.CLASS_NAME, 'flight-search__time--departure').text
+            arrival_time = flight.find_element(By.CLASS_NAME, 'flight-search__time--arrival').text
+            cities = flight.find_elements(By.CLASS_NAME, 'flight-search__city')
+            departure_city = cities[0].text
+            arrival_city = cities[1].text
+            duration = flight.find_element(By.CLASS_NAME, 'flight-search__duration').text
+            price = flight.find_element(By.CLASS_NAME, 'flight-search__price').text
+            seats = flight.find_element(By.CLASS_NAME, 'flight-search__seats').text
 
-    # Сохранение в JSON
-    with open('tickets_with_transfers.json', 'w', encoding='utf-8') as f:
-        json.dump(tickets, f, ensure_ascii=False, indent=4)
+            ticket = Ticket(departure_time, arrival_time, departure_city, arrival_city, duration, price, seats)
+            data.append(ticket)
+        except Exception as e:
+            print(f"Ошибка при обработке рейса: {e}")
 
-    print("Данные успешно сохранены в tickets.json")'''
+        # Вывод всех билетов
+    for ticket in data:
+        print(ticket)
+        print("-" * 50)
 finally:
     driver.quit()
-    
