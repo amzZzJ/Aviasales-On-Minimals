@@ -43,6 +43,10 @@ def signup():
         email = request.form['email']
         password = request.form['password']
 
+        if not username or not email or not password:
+            flash('Все поля обязательны для заполнения!', 'error')
+            return redirect(url_for('signup'))
+
         # Проверка на уникальность
         if User.query.filter_by(email=email).first():
             flash('Пользователь с таким email уже существует.', 'error')
