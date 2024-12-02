@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from flask import session
 
 app = Flask(__name__)
 
@@ -30,6 +31,9 @@ def index():
 
 @app.route('/profile')
 def profile():
+    if 'user_id' not in session:
+        flash('Сначала войдите в аккаунт.', 'error')
+        return redirect(url_for('login'))
     return render_template('profile.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
@@ -67,6 +71,8 @@ def login():
         user = User.query.filter_by(email=email).first()
 
         if user and bcrypt.check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            session['username'] = user.username
             flash('Вы успешно вошли!', 'success')
             return redirect(url_for('profile'))  # Перенаправление на защищенную страницу
         else:
@@ -91,6 +97,13 @@ def search():
         ]
         return render_template('main.html', results=results)
     return render_template('main.html', results=[])
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('Вы вышли из аккаунта.', 'success')
+    return render_template('main.html')
+
 
 if __name__ == "__main__":
     app.run(debug=True)
