@@ -1,11 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from flask import session
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user.db'  # SQLite база данных
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_secret_key'
 
@@ -24,7 +23,6 @@ class User(db.Model):
 with app.app_context():
     db.create_all()
 
-# Главная страница
 @app.route('/')
 def index():
     return render_template('main.html')
@@ -47,15 +45,12 @@ def signup():
             flash('Все поля обязательны для заполнения!', 'error')
             return redirect(url_for('signup'))
 
-        # Проверка на уникальность
         if User.query.filter_by(email=email).first():
             flash('Пользователь с таким email уже существует.', 'error')
             return redirect(url_for('signup'))
 
-        # Хэширование пароля
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-        # Сохранение в базу данных
         new_user = User(username=username, email=email, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
@@ -71,7 +66,6 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
-        # Поиск пользователя по email
         user = User.query.filter_by(email=email).first()
 
         if user and bcrypt.check_password_hash(user.password, password):
@@ -88,13 +82,11 @@ def login():
     return render_template('login.html')
 
 
-# Страница поиска
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     if request.method == 'POST':
         destination = request.form['destination']
         max_price = request.form['max_price']
-        # Логика обработки запроса
         results = [
             {"price": 4500, "link": "http://example.com/ticket1"},
             {"price": 5000, "link": "http://example.com/ticket2"}
