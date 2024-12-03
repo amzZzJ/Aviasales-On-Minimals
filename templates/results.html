@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Результаты поиска</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        .results {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .result {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .result:last-child {
+            border-bottom: none;
+        }
+        .result p {
+            margin: 5px 0;
+        }
+        .result a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+        .result a:hover {
+            text-decoration: underline;
+        }
+        .back-button {
+            display: block;
+            text-align: center;
+            margin: 20px auto;
+            max-width: 200px;
+            padding: 10px;
+            background-color: #007BFF;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 5px;
+        }
+        .back-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Результаты поиска</h1>
+    </header>
+    {% if results %}
+    <div class="results">
+        <h2>Результаты поиска:</h2>
+        {% for result in results %}
+        <div class="result">
+            <p><strong>Цена:</strong> {{ result.price }} руб.</p>
+            <p><strong>Сегменты:</strong></p>
+            <ul>
+                {% for segment in result.segments %}
+                <li>
+                    <p><strong>Вылет:</strong> {{ segment['Вылет'] }}</p>
+                    <p><strong>Прилет:</strong> {{ segment['Прилет'] }}</p>
+                    <p><strong>Перевозчик:</strong> {{ segment['Перевозчик'] }}</p>
+                    <p><strong>Рейс:</strong> {{ segment['Рейс'] }}</p>
+                    <p><strong>Самолет:</strong> {{ segment['Самолет'] }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+            <a href="{{ result.link }}" target="_blank">Подробнее</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    </div>
+    <a href="/" class="back-button">На главную страницу</a>
+</body>
+</html>

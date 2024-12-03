@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from parser_aeroflot import search_tickets  # Импортируем парсер для поиска билетов
 
 app = Flask(__name__)
 
@@ -11,6 +12,7 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
+# Модель пользователя
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), nullable=False, unique=True)
@@ -20,13 +22,46 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
+# Создание базы данных
 with app.app_context():
     db.create_all()
 
+# Главная страница с формой поиска
 @app.route('/')
 def index():
     return render_template('main.html')
 
+
+@app.route('/search', methods=['POST'])
+def search():
+    # Получаем данные из формы
+    city_from = request.form['from']
+    city_to = request.form['to']
+    date_from = str(request.form['date_from'])
+    date_to = str(request.form['date_to'])
+    max_price = str(request.form['max_price'])
+
+    # Вызов парсера
+    try:
+        results = search_tickets(city_from, city_to, date_from, date_to, max_price)
+
+        # Фильтруем результаты на серверной стороне
+        for result in results:
+            result['segments'] = [
+                segment for segment in result['segments']
+                if segment['Вылет'] not in ['ЛУЧШАЯ ЦЕНА', 'В ПУТИ', 'Пересадка']
+            ]
+
+        print("Результаты: ", results)
+    except Exception as e:
+        results = []
+        print(f"Ошибка при парсинге: {e}")
+
+    # Возврат результатов в шаблон
+    return render_template('results.html', results=results)
+
+
+# Страница профиля пользователя
 @app.route('/profile')
 def profile():
     if 'user_id' not in session:
@@ -34,6 +69,7 @@ def profile():
         return redirect(url_for('login'))
     return render_template('profile.html')
 
+# Страница регистрации
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -60,6 +96,7 @@ def signup():
 
     return render_template('signup.html')
 
+# Страница входа
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -81,25 +118,12 @@ def login():
 
     return render_template('login.html')
 
-
-@app.route('/search', methods=['GET', 'POST'])
-def search():
-    if request.method == 'POST':
-        destination = request.form['destination']
-        max_price = request.form['max_price']
-        results = [
-            {"price": 4500, "link": "http://example.com/ticket1"},
-            {"price": 5000, "link": "http://example.com/ticket2"}
-        ]
-        return render_template('main.html', results=results)
-    return render_template('main.html', results=[])
-
+# Выход из аккаунта
 @app.route('/logout')
 def logout():
     session.clear()
     flash('Вы вышли из аккаунта.', 'success')
-    return render_template('main.html')
-
+    return redirect(url_for('index'))
 
 if __name__ == "__main__":
     app.run(debug=True)

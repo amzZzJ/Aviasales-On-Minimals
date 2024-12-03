@@ -5,7 +5,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-import re
 
 # Вспомогательные функции для обработки текста
 def parse_flight_segment(lines, start_index):
@@ -53,70 +52,88 @@ def parse_ticket(lines):
 
     return ticket
 
+# Основная функция
+def search_tickets(city_from, city_to, date_from, date_to, output_file):
+    """Ищет билеты по заданным параметрам."""
+    options = webdriver.ChromeOptions()
+    driver = webdriver.Chrome(options=options)
+    data = []
 
+    try:
+        driver.get('https://www.aeroflot.ru/ru-ru')
+        WebDriverWait(driver, 20).until(
+            EC.visibility_of_element_located(((By.NAME, 'ticket-city-arrival-0-booking')))
+        )
 
-# Настройка Selenium
-options = webdriver.ChromeOptions()
-driver = webdriver.Chrome(options=options)
-data = []
+        # Ввод данных
+        from_field = driver.find_element(By.NAME, "ticket-city-departure-0-booking")
+        from_field.send_keys(Keys.CONTROL + "a")
+        from_field.send_keys(Keys.DELETE)
+        time.sleep(1)
+        from_field.clear()
+        from_field.send_keys(city_from)
+        time.sleep(1)
+        from_field.send_keys(Keys.DOWN)
+        from_field.send_keys(Keys.ENTER)
 
-try:
-    driver.get('https://www.aeroflot.ru/ru-ru')
-    WebDriverWait(driver, 20).until(
-        EC.visibility_of_element_located(((By.NAME, 'ticket-city-arrival-0-booking')))
+        to_field = driver.find_element(By.NAME, 'ticket-city-arrival-0-booking')
+        to_field.send_keys(city_to)
+        time.sleep(1)
+        to_field.send_keys(Keys.DOWN)
+        to_field.send_keys(Keys.ENTER)
+
+        from_date_field = driver.find_element(By.NAME, 'ticket-date-from-booking')
+        from_date_field.send_keys(Keys.CONTROL + "a")
+        from_date_field.send_keys(Keys.DELETE)
+        time.sleep(1)
+        from_date_field.send_keys(date_from)
+        time.sleep(1)
+        from_date_field.send_keys(Keys.ENTER)
+
+        to_date_field = driver.find_element(By.NAME, "ticket-date-to-booking")
+        to_date_field.send_keys(date_to)
+        to_date_field.send_keys(Keys.ENTER)
+
+        time.sleep(3)
+        search_button = driver.find_element(By.CSS_SELECTOR, "#adaptive-sub_0 > div > div > fieldset > div.main-module__row."
+                                                             "main-module__search-form__footer.main-module__h-display--flex."
+                                                             "main-module__simple > div.main-module__search-form__search-btn."
+                                                             "main-module__col--4.main-module__col-tablet--5."
+                                                             "main-module__col--stack-below-tablet-vertical > button")
+        search_button.click()
+        time.sleep(20)
+
+        flights = driver.find_elements(By.CLASS_NAME, 'flight-search')
+
+        # Обработка данных
+        tickets = []
+        for flight in flights:
+            flight_text = flight.text
+            lines = list(filter(None, map(str.strip, flight_text.split('\n'))))
+            if lines:
+                ticket = parse_ticket(lines)
+                if ticket:
+                    tickets.append(ticket)
+
+        # Сохранение данных в JSON
+        if tickets:
+            with open(output_file, 'w', encoding='utf-8') as f:
+                json.dump(tickets, f, ensure_ascii=False, indent=4)
+
+            print(f"Данные успешно сохранены в {output_file}")
+            print(tickets)
+            return tickets
+        else:
+            print("Не удалось найти данные о рейсах.")
+    finally:
+        driver.quit()
+
+# Пример вызова функции
+if __name__ == "__main__":
+    search_tickets(
+        city_from="Москва",
+        city_to="Стамбул",
+        date_from="04.12.2024",
+        date_to="17.12.2024",
+        output_file="tickets_with_transfers.json"
     )
-    city_from = driver.find_element(By.NAME, "ticket-city-departure-0-booking")
-    city_from.send_keys(Keys.CONTROL + "a")
-    city_from.send_keys(Keys.DELETE)
-    time.sleep(1)
-    city_from.clear()
-    city_from.send_keys("Москва")
-    time.sleep(1)
-    city_from.send_keys(Keys.DOWN)
-    city_from.send_keys(Keys.ENTER)
-    city_to = driver.find_element(By.NAME, 'ticket-city-arrival-0-booking')
-    city_to.send_keys("Стамбул")
-    time.sleep(1)
-    city_to.send_keys(Keys.DOWN)
-    city_to.send_keys(Keys.ENTER)
-    time.sleep(1)
-    date_to = driver.find_element(By.NAME, 'ticket-date-from-booking')
-    date_to.send_keys(Keys.CONTROL + "a")
-    date_to.send_keys(Keys.DELETE)
-    time.sleep(1)
-    date_to.send_keys("03.12.2024")
-    time.sleep(1)
-    date_to.send_keys(Keys.ENTER)
-    date_from = driver.find_element(By.NAME, "ticket-date-to-booking")
-    date_from.send_keys("17.12.2024")
-    date_from.send_keys(Keys.ENTER)
-    time.sleep(3)
-    button = driver.find_element(By.CSS_SELECTOR, "#adaptive-sub_0 > div > div > fieldset > div.main-module__row."
-                                                  "main-module__search-form__footer.main-module__h-display--flex."
-                                                  "main-module__simple > div.main-module__search-form__search-btn."
-                                                  "main-module__col--4.main-module__col-tablet--5."
-                                                  "main-module__col--stack-below-tablet-vertical > button")
-    button.click()
-    time.sleep(20)
-    flights = driver.find_elements(By.CLASS_NAME, 'flight-search')
-
-    # Обработка данных
-    tickets = []
-    for flight in flights:
-        flight_text = flight.text
-        lines = list(filter(None, map(str.strip, flight_text.split('\n'))))
-        if lines:
-            ticket = parse_ticket(lines)
-            if ticket:
-                tickets.append(ticket)
-
-    # Сохранение данных в JSON
-    if tickets:
-        with open('tickets_with_transfers.json', 'w', encoding='utf-8') as f:
-            json.dump(tickets, f, ensure_ascii=False, indent=4)
-
-        print("Данные успешно сохранены в tickets_with_transfers.json")
-    else:
-        print("Не удалось найти данные о рейсах.")
-finally:
-    driver.quit()

@@ -101,21 +101,6 @@
         <button type="submit">Искать!</button>
     </form>
 
-    <!-- Результаты поиска -->
-    {% if results %}
-    <div class="results">
-        <h2>Результаты:</h2>
-        {% for result in results %}
-        <div class="result">
-            <p>Цена: {{ result.price }} руб.</p>
-            <p><a href="{{ result.link }}" target="_blank">Подробнее</a></p>
-        </div>
-        {% endfor %}
-    </div>
-    {% elif results is not none %}
-    <div class="results">
-        <p>Ничего не найдено.</p>
-    </div>
-    {% endif %}
+
 </body>
 </html>
