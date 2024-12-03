@@ -53,7 +53,7 @@ def parse_ticket(lines):
     return ticket
 
 # Основная функция
-def search_tickets(city_from, city_to, date_from, date_to, output_file):
+def search_tickets(city_from, city_to, date_from, date_to):
     """Ищет билеты по заданным параметрам."""
     options = webdriver.ChromeOptions()
     driver = webdriver.Chrome(options=options)
@@ -117,23 +117,10 @@ def search_tickets(city_from, city_to, date_from, date_to, output_file):
 
         # Сохранение данных в JSON
         if tickets:
-            with open(output_file, 'w', encoding='utf-8') as f:
-                json.dump(tickets, f, ensure_ascii=False, indent=4)
-
-            print(f"Данные успешно сохранены в {output_file}")
-            print(tickets)
+            # print(tickets)
             return tickets
         else:
             print("Не удалось найти данные о рейсах.")
     finally:
         driver.quit()
 
-# Пример вызова функции
-if __name__ == "__main__":
-    search_tickets(
-        city_from="Москва",
-        city_to="Стамбул",
-        date_from="04.12.2024",
-        date_to="17.12.2024",
-        output_file="tickets_with_transfers.json"
-    )

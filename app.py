@@ -43,7 +43,11 @@ def search():
 
     # Вызов парсера
     try:
-        results = search_tickets(city_from, city_to, date_from, date_to, max_price)
+        results = search_tickets(
+        city_from=city_from,
+        city_to=city_to,
+        date_from=date_from,
+        date_to=date_to)
 
         # Фильтруем результаты на серверной стороне
         for result in results:
@@ -52,7 +56,7 @@ def search():
                 if segment['Вылет'] not in ['ЛУЧШАЯ ЦЕНА', 'В ПУТИ', 'Пересадка']
             ]
 
-        print("Результаты: ", results)
+        #print("Результаты: ", results)
     except Exception as e:
         results = []
         print(f"Ошибка при парсинге: {e}")
