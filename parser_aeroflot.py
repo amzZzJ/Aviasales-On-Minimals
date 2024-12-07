@@ -6,7 +6,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
-# Вспомогательные функции для обработки текста
 def parse_flight_segment(lines, start_index):
     """Парсит информацию об одном сегменте рейса."""
     try:
@@ -52,7 +51,6 @@ def parse_ticket(lines):
 
     return ticket
 
-# Основная функция
 def search_tickets(city_from, city_to, date_from, date_to):
     """Ищет билеты по заданным параметрам."""
     options = webdriver.ChromeOptions()
@@ -105,7 +103,6 @@ def search_tickets(city_from, city_to, date_from, date_to):
 
         flights = driver.find_elements(By.CLASS_NAME, 'flight-search')
 
-        # Обработка данных
         tickets = []
         for flight in flights:
             flight_text = flight.text
@@ -115,7 +112,6 @@ def search_tickets(city_from, city_to, date_from, date_to):
                 if ticket:
                     tickets.append(ticket)
 
-        # Сохранение данных в JSON
         if tickets:
             # print(tickets)
             return tickets

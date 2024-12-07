@@ -1,18 +1,17 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from parser_aeroflot import search_tickets  # Импортируем парсер для поиска билетов
+from parser_aeroflot import search_tickets
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SECRET_KEY'] = 'anyakseniaamina'
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
-# Модель пользователя
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), nullable=False, unique=True)
@@ -22,11 +21,9 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
-# Создание базы данных
 with app.app_context():
     db.create_all()
 
-# Главная страница с формой поиска
 @app.route('/')
 def index():
     return render_template('main.html')
@@ -34,14 +31,12 @@ def index():
 
 @app.route('/search', methods=['POST'])
 def search():
-    # Получаем данные из формы
     city_from = request.form['from']
     city_to = request.form['to']
     date_from = str(request.form['date_from'])
     date_to = str(request.form['date_to'])
     max_price = str(request.form['max_price'])
 
-    # Вызов парсера
     try:
         results = search_tickets(
         city_from=city_from,
@@ -49,7 +44,6 @@ def search():
         date_from=date_from,
         date_to=date_to)
 
-        # Фильтруем результаты на серверной стороне
         for result in results:
             result['segments'] = [
                 segment for segment in result['segments']
@@ -61,11 +55,8 @@ def search():
         results = []
         print(f"Ошибка при парсинге: {e}")
 
-    # Возврат результатов в шаблон
     return render_template('results.html', results=results)
 
-
-# Страница профиля пользователя
 @app.route('/profile')
 def profile():
     if 'user_id' not in session:
@@ -73,7 +64,6 @@ def profile():
         return redirect(url_for('login'))
     return render_template('profile.html')
 
-# Страница регистрации
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
@@ -100,7 +90,6 @@ def signup():
 
     return render_template('signup.html')
 
-# Страница входа
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -113,7 +102,7 @@ def login():
             session['user_id'] = user.id
             session['username'] = user.username
             flash('Вы успешно вошли!', 'success')
-            return redirect(url_for('profile'))  # Перенаправление на защищенную страницу
+            return redirect(url_for('profile'))
         else:
             flash(
                 'Неправильный email или пароль. <a href="/signup">Зарегистрироваться?</a>',
@@ -122,7 +111,6 @@ def login():
 
     return render_template('login.html')
 
-# Выход из аккаунта
 @app.route('/logout')
 def logout():
     session.clear()
