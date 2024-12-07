@@ -103,7 +103,6 @@ class UserRegistrationTestCase(unittest.TestCase):
 
         @patch('app.search_tickets')
         def test_search_error(self, mock_search):
-            # Замокаем ошибку в поиске билетов
             mock_search.side_effect = Exception("Ошибка при парсинге")
 
             with app.test_client() as client:

@@ -63,7 +63,6 @@ def search_tickets(city_from, city_to, date_from, date_to):
             EC.visibility_of_element_located(((By.NAME, 'ticket-city-arrival-0-booking')))
         )
 
-        # Ввод данных
         from_field = driver.find_element(By.NAME, "ticket-city-departure-0-booking")
         from_field.send_keys(Keys.CONTROL + "a")
         from_field.send_keys(Keys.DELETE)
