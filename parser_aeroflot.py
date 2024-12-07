@@ -93,12 +93,14 @@ def search_tickets(city_from, city_to, date_from, date_to):
         to_date_field.send_keys(Keys.ENTER)
 
         time.sleep(3)
-        search_button = driver.find_element(By.CSS_SELECTOR, "#adaptive-sub_0 > div > div > fieldset > div.main-module__row."
-                                                             "main-module__search-form__footer.main-module__h-display--flex."
-                                                             "main-module__simple > div.main-module__search-form__search-btn."
-                                                             "main-module__col--4.main-module__col-tablet--5."
-                                                             "main-module__col--stack-below-tablet-vertical > button")
+        search_button = driver.find_element(By.CSS_SELECTOR,
+                                            "#adaptive-sub_0 > div > div > fieldset > div.main-module__row."
+                                            "main-module__search-form__footer.main-module__h-display--flex."
+                                            "main-module__simple > div.main-module__search-form__search-btn."
+                                            "main-module__col--4.main-module__col-tablet--5."
+                                            "main-module__col--stack-below-tablet-vertical > button")
         search_button.click()
+
         time.sleep(20)
 
         flights = driver.find_elements(By.CLASS_NAME, 'flight-search')
@@ -119,4 +121,5 @@ def search_tickets(city_from, city_to, date_from, date_to):
             print("Не удалось найти данные о рейсах.")
     finally:
         driver.quit()
+
 
