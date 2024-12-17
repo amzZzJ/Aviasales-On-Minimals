@@ -6,7 +6,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
-# Вспомогательные функции для обработки текста
 def parse_flight_segment(lines, start_index):
     """Парсит информацию об одном сегменте рейса."""
     try:
@@ -52,8 +51,7 @@ def parse_ticket(lines):
 
     return ticket
 
-# Основная функция
-def search_tickets(city_from, city_to, date_from, date_to, output_file):
+def search_tickets(city_from, city_to, date_from, date_to):
     """Ищет билеты по заданным параметрам."""
     options = webdriver.ChromeOptions()
     driver = webdriver.Chrome(options=options)
@@ -65,7 +63,6 @@ def search_tickets(city_from, city_to, date_from, date_to, output_file):
             EC.visibility_of_element_located(((By.NAME, 'ticket-city-arrival-0-booking')))
         )
 
-        # Ввод данных
         from_field = driver.find_element(By.NAME, "ticket-city-departure-0-booking")
         from_field.send_keys(Keys.CONTROL + "a")
         from_field.send_keys(Keys.DELETE)
@@ -95,17 +92,18 @@ def search_tickets(city_from, city_to, date_from, date_to, output_file):
         to_date_field.send_keys(Keys.ENTER)
 
         time.sleep(3)
-        search_button = driver.find_element(By.CSS_SELECTOR, "#adaptive-sub_0 > div > div > fieldset > div.main-module__row."
-                                                             "main-module__search-form__footer.main-module__h-display--flex."
-                                                             "main-module__simple > div.main-module__search-form__search-btn."
-                                                             "main-module__col--4.main-module__col-tablet--5."
-                                                             "main-module__col--stack-below-tablet-vertical > button")
+        search_button = driver.find_element(By.CSS_SELECTOR,
+                                            "#adaptive-sub_0 > div > div > fieldset > div.main-module__row."
+                                            "main-module__search-form__footer.main-module__h-display--flex."
+                                            "main-module__simple > div.main-module__search-form__search-btn."
+                                            "main-module__col--4.main-module__col-tablet--5."
+                                            "main-module__col--stack-below-tablet-vertical > button")
         search_button.click()
+
         time.sleep(20)
 
         flights = driver.find_elements(By.CLASS_NAME, 'flight-search')
 
-        # Обработка данных
         tickets = []
         for flight in flights:
             flight_text = flight.text
@@ -115,25 +113,12 @@ def search_tickets(city_from, city_to, date_from, date_to, output_file):
                 if ticket:
                     tickets.append(ticket)
 
-        # Сохранение данных в JSON
         if tickets:
-            with open(output_file, 'w', encoding='utf-8') as f:
-                json.dump(tickets, f, ensure_ascii=False, indent=4)
-
-            print(f"Данные успешно сохранены в {output_file}")
-            print(tickets)
+            # print(tickets)
             return tickets
         else:
             print("Не удалось найти данные о рейсах.")
     finally:
         driver.quit()
 
-# Пример вызова функции
-if __name__ == "__main__":
-    search_tickets(
-        city_from="Москва",
-        city_to="Стамбул",
-        date_from="04.12.2024",
-        date_to="17.12.2024",
-        output_file="tickets_with_transfers.json"
-    )
+

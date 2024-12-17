@@ -1,5 +1,6 @@
-import unittest
 from app import app, db, User
+import unittest
+from unittest.mock import patch, MagicMock
 
 class UserRegistrationTestCase(unittest.TestCase):
     def setUp(self):
@@ -51,6 +52,71 @@ class UserRegistrationTestCase(unittest.TestCase):
         ), follow_redirects=True)
 
         self.assertIn('Все поля обязательны для заполнения!', response.data.decode('utf-8'))
+
+    class SearchTestCase(unittest.TestCase):
+        @patch('app.search_tickets')
+        def test_search_success(self, mock_search):
+            mock_search.return_value = [{
+                'segments': [{'Вылет': 'Москва', 'Прилет': 'Санкт-Петербург', 'Перевозчик': 'Аэрофлот', 'Рейс': 'SU123',
+                              'Самолет': 'Boeing 737'}],
+                'Общее время в пути': '1 ч 45 мин',
+                'Цена': '10 000',
+                'Доступные места': '10'
+            }]
+
+            with app.test_client() as client:
+                response = client.post('/search', data={
+                    'from': 'Москва',
+                    'to': 'Санкт-Петербург',
+                    'date_from': '2024-12-01',
+                    'date_to': '2024-12-10',
+                    'max_price': '10000'
+                })
+
+                self.assertEqual(response.status_code, 200)
+                self.assertIn('10 000', response.data.decode())
+
+        @patch('app.webdriver.Chrome')
+        def test_search_with_selenium_mock(self, MockWebDriver):
+            mock_driver = MagicMock()
+            MockWebDriver.return_value = mock_driver
+
+            mock_driver.find_elements.return_value = [
+                MagicMock(text='Москва\nСанкт-Петербург\nАэрофлот\nSU123\nBoeing 737\n1 ч 45 мин\n10 000\n10 мест')
+            ]
+
+            with app.test_client() as client:
+                response = client.post('/search', data={
+                    'from': 'Москва',
+                    'to': 'Санкт-Петербург',
+                    'date_from': '2024-12-01',
+                    'date_to': '2024-12-10',
+                    'max_price': '10000'
+                })
+
+                self.assertEqual(response.status_code, 200)
+
+                self.assertIn('Москва', response.data.decode())
+                self.assertIn('Санкт-Петербург', response.data.decode())
+                self.assertIn('10 000', response.data.decode())
+                self.assertIn('1 ч 45 мин', response.data.decode())
+
+        @patch('app.search_tickets')
+        def test_search_error(self, mock_search):
+            mock_search.side_effect = Exception("Ошибка при парсинге")
+
+            with app.test_client() as client:
+                response = client.post('/search', data={
+                    'from': 'Москва',
+                    'to': 'Санкт-Петербург',
+                    'date_from': '2024-12-01',
+                    'date_to': '2024-12-10',
+                    'max_price': '10000'
+                })
+
+                self.assertEqual(response.status_code, 200)
+
+                self.assertIn('Ничего не найдено', response.data.decode())
 
 if __name__ == '__main__':
     unittest.main()
