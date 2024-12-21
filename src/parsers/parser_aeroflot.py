@@ -118,6 +118,8 @@ def search_tickets(city_from, city_to, date_from, date_to):
             return tickets
         else:
             print("Не удалось найти данные о рейсах.")
+    except Exception as e:
+        print(e)
     finally:
         driver.quit()
 

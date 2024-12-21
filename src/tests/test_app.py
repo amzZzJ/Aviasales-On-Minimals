@@ -1,4 +1,4 @@
-from app import app, db, User
+from src.app import app, db, User
 import unittest
 from unittest.mock import patch, MagicMock
 
