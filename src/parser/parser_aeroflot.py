@@ -6,28 +6,112 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
+import re
+
 def parse_flight_segment(lines, start_index):
     """Парсит информацию об одном сегменте рейса."""
     try:
         return {
-            "Вылет": lines[start_index],
-            "Прилет": lines[start_index + 1],
-            "Перевозчик": lines[start_index + 2],
-            "Рейс": lines[start_index + 3],
-            "Самолет": lines[start_index + 4]
+            "Вылет": extract_departure(lines),
+            "Прилет": extract_arrival(lines),
+            "Перевозчик": "Аэрофлот",
+            "Рейс": extract_flight_number(lines),
+            "Самолет": lines[start_index + 4] if start_index + 4 < len(lines) else "Информация отсутствует",
+            "Цена": extract_price(lines)
         }
     except IndexError:
         return None
+
+
+def extract_departure(lines):
+    """Ищет вылет: строка начинается с времени в формате ЧЧ:ММ."""
+    for line in lines:
+        if re.match(r"^\d{2}:\d{2}", line):  # Строка начинается с ЧЧ:ММ
+            return line
+    return "Информация отсутствует"
+
+def extract_arrival(lines):
+    """Ищет прилет: строка заканчивается временем в формате ЧЧ:ММ."""
+    for line in lines:
+        if re.search(r"\d{2}:\d{2}$", line):  # Строка заканчивается на ЧЧ:ММ
+            return line
+    return "Информация отсутствует"
+
+
+def extract_price(lines):
+    """Ищет цену в массиве строк."""
+    for line in lines:
+        if "от" in line and "a" in line:  # Пример: "от 33 600 Р"
+            return line.strip()
+    return "Информация отсутствует"
+
+import re
+
+def extract_flight_number(lines):
+    """Ищет номер рейса в массиве строк."""
+    for line in lines:
+        match = re.search(r"\bSU \d+\b", line)  # Пример: SU 1234
+        if match:
+            return match.group(0)
+    return "Информация отсутствует"
+
+
+
+def is_valid_time_and_location(line):
+    """Проверяет, является ли строка валидным временем и локацией."""
+    return bool(re.match(r"^\d{2}:\d{2}[A-Z]{3}", line))
+
+
+def is_valid_carrier(line):
+    """Проверяет, является ли строка валидным названием перевозчика."""
+    return bool(line) and len(line.split()) <= 3  # Простая проверка на название перевозчика
+
+
+def is_valid_flight_number(line):
+    """Проверяет, является ли строка валидным номером рейса."""
+    return bool(re.match(r"^[A-Z]{2}\s?\d{3,4}$", line))
+
+
+def is_valid_aircraft(line):
+    """Проверяет, является ли строка валидным названием самолёта."""
+    return "Boeing" in line or "Airbus" in line or "Sukhoi" in line
+
+
+def is_valid_price(line):
+    """Проверяет, является ли строка валидной ценой."""
+    return bool(re.match(r"^от\s\d{1,3}(?:\s?\d{3})*\s[РрAa]$", line))
+
 
 def parse_ticket(lines):
     """Парсит информацию о билете (с пересадкой или без)."""
     ticket = {}
     segments = []
+    seen_segments = set()  # Для отслеживания уникальных сегментов
     i = 0
+
     while i < len(lines):
         segment = parse_flight_segment(lines, i)
         if segment:
-            segments.append(segment)
+            # Очищаем данные для сравнения, убираем лишние пробелы и символы
+            clean_segment = {
+                'Цена': segment['Цена'].strip() if segment['Цена'] else "Информация отсутствует",
+                'Вылет': segment['Вылет'].strip() if segment['Вылет'] else "Информация отсутствует",
+                'Прилет': segment['Прилет'].strip() if segment['Прилет'] else "Информация отсутствует",
+                'Перевозчик': segment['Перевозчик'].strip() if segment['Перевозчик'] else "Информация отсутствует",
+                'Рейс': segment['Рейс'].strip() if segment['Рейс'] else "Информация отсутствует",
+                'Самолет': segment['Самолет'].strip() if segment['Самолет'] else "Информация отсутствует",
+            }
+
+            # Преобразуем в кортеж для проверки уникальности
+            segment_tuple = tuple(clean_segment.values())
+
+            # Проверяем, уникален ли сегмент
+            if segment_tuple not in seen_segments:
+                segments.append(segment)
+                seen_segments.add(segment_tuple)
+            else:
+                print(f"Дубликат найден: {clean_segment}")  # Выводим дубликаты для отладки
+
             i += 5
             if i < len(lines) and "Пересадка" in lines[i]:
                 segments[-1]["Пересадка"] = lines[i]
@@ -41,7 +125,10 @@ def parse_ticket(lines):
     if i < len(lines):
         ticket["Общее время в пути"] = lines[i]
         if i + 1 < len(lines):
-            ticket["Цена"] = lines[i + 1]
+            price_text = lines[i + 1]
+            # Извлечение числового значения цены
+            match = re.search(r'\d+', price_text)
+            ticket["Цена"] = match.group() if match else "Цена не указана"
         else:
             ticket["Цена"] = "Цена не указана"
         if i + 2 < len(lines):
@@ -50,6 +137,7 @@ def parse_ticket(lines):
             ticket["Доступные места"] = "Информация о доступных местах отсутствует"
 
     return ticket
+
 
 def search_tickets(city_from, city_to, date_from, date_to):
     """Ищет билеты по заданным параметрам."""
@@ -119,7 +207,7 @@ def search_tickets(city_from, city_to, date_from, date_to):
         else:
             print("Не удалось найти данные о рейсах.")
     except Exception as e:
-        print(e)
+        print(f"AAAA:")
     finally:
         driver.quit()
 
