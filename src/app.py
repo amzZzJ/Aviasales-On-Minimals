@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
-from parsers.parser_aeroflot import search_tickets
+from parser.parser_aeroflot import search_tickets
 
 app = Flask(__name__, template_folder='resources/templates')
 
