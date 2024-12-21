@@ -41,19 +41,23 @@ def search():
 
     try:
         results = search_tickets(
-        city_from=city_from,
-        city_to=city_to,
-        date_from=date_from,
-        date_to=date_to)
-        print("Результаты: ", results)
+            city_from=city_from,
+            city_to=city_to,
+            date_from=date_from,
+            date_to=date_to
+        )
 
+        # Удаление дублирующихся сегментов
         for result in results:
-            result['segments'] = [
-                segment for segment in result['segments']
-                if segment['Вылет'] not in ['ЛУЧШАЯ ЦЕНА', 'В ПУТИ', 'Пересадка']
-            ]
+            unique_segments = []
+            seen_segments = set()
+            for segment in result['segments']:
+                segment_str = f"{segment['Цена']}|{segment['Вылет']}|{segment['Прилет']}|{segment['Перевозчик']}|{segment['Рейс']}|{segment['Самолет']}"
+                if segment_str not in seen_segments:
+                    unique_segments.append(segment)
+                    seen_segments.add(segment_str)
+            result['segments'] = unique_segments
 
-        #print("Результаты: ", results)
     except Exception as e:
         results = []
         print(f"Ошибка при парсинге: {e}")

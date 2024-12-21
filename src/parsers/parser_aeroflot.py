@@ -5,7 +5,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-
+from fake_user_agent import user_agent
 import re
 
 def parse_flight_segment(lines, start_index):
@@ -21,6 +21,8 @@ def parse_flight_segment(lines, start_index):
         }
     except IndexError:
         return None
+
+
 
 
 def extract_departure(lines):
@@ -86,38 +88,38 @@ def parse_ticket(lines):
     """Парсит информацию о билете (с пересадкой или без)."""
     ticket = {}
     segments = []
-    seen_segments = set()  # Для отслеживания уникальных сегментов
+    seen_segments = set()
     i = 0
 
     while i < len(lines):
         segment = parse_flight_segment(lines, i)
         if segment:
-            # Очищаем данные для сравнения, убираем лишние пробелы и символы
-            clean_segment = {
-                'Цена': segment['Цена'].strip() if segment['Цена'] else "Информация отсутствует",
-                'Вылет': segment['Вылет'].strip() if segment['Вылет'] else "Информация отсутствует",
-                'Прилет': segment['Прилет'].strip() if segment['Прилет'] else "Информация отсутствует",
-                'Перевозчик': segment['Перевозчик'].strip() if segment['Перевозчик'] else "Информация отсутствует",
-                'Рейс': segment['Рейс'].strip() if segment['Рейс'] else "Информация отсутствует",
-                'Самолет': segment['Самолет'].strip() if segment['Самолет'] else "Информация отсутствует",
-            }
-
-            # Преобразуем в кортеж для проверки уникальности
-            segment_tuple = tuple(clean_segment.values())
-
-            # Проверяем, уникален ли сегмент
-            if segment_tuple not in seen_segments:
+            # Создаем ключ для проверки уникальности
+            segment_key = (
+                segment['Вылет'].strip(),
+                segment['Прилет'].strip(),
+                segment['Перевозчик'].strip(),
+                segment['Рейс'].strip(),
+                segment['Цена'].strip()
+            )
+            # Проверяем, что сегмент уникальный
+            if segment_key not in seen_segments:
                 segments.append(segment)
-                seen_segments.add(segment_tuple)
+                seen_segments.add(segment_key)  # Добавляем в множество уникальных сегментов
             else:
-                print(f"Дубликат найден: {clean_segment}")  # Выводим дубликаты для отладки
+                print(f"Дубликат найден: {segment_key}")
 
+            # Переходим к следующему блоку
             i += 5
             if i < len(lines) and "Пересадка" in lines[i]:
                 segments[-1]["Пересадка"] = lines[i]
                 i += 1
         else:
             break
+
+    # Убираем лишние блоки, если нужно оставить только один
+    if len(segments) > 1:
+        segments = segments[:1]  # Оставляем только первый блок
 
     if segments:
         ticket["segments"] = segments
@@ -126,7 +128,6 @@ def parse_ticket(lines):
         ticket["Общее время в пути"] = lines[i]
         if i + 1 < len(lines):
             price_text = lines[i + 1]
-            # Извлечение числового значения цены
             match = re.search(r'\d+', price_text)
             ticket["Цена"] = match.group() if match else "Цена не указана"
         else:
@@ -137,6 +138,7 @@ def parse_ticket(lines):
             ticket["Доступные места"] = "Информация о доступных местах отсутствует"
 
     return ticket
+
 
 
 def search_tickets(city_from, city_to, date_from, date_to):
@@ -193,16 +195,20 @@ def search_tickets(city_from, city_to, date_from, date_to):
         flights = driver.find_elements(By.CLASS_NAME, 'flight-search')
 
         tickets = []
+        seen_flight_texts = set()
+
         for flight in flights:
             flight_text = flight.text
-            lines = list(filter(None, map(str.strip, flight_text.split('\n'))))
-            if lines:
-                ticket = parse_ticket(lines)
-                if ticket:
-                    tickets.append(ticket)
+            if flight_text not in seen_flight_texts:
+                seen_flight_texts.add(flight_text)
+                lines = list(filter(None, map(str.strip, flight_text.split('\n'))))
+                if lines:
+                    ticket = parse_ticket(lines)
+                    if ticket:
+                        tickets.append(ticket)
 
         if tickets:
-            # print(tickets)
+            print(tickets)
             return tickets
         else:
             print("Не удалось найти данные о рейсах.")
