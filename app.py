@@ -43,6 +43,7 @@ def search():
         city_to=city_to,
         date_from=date_from,
         date_to=date_to)
+        print("Результаты: ", results)
 
         for result in results:
             result['segments'] = [
