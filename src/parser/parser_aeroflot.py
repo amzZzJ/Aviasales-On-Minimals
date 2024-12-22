@@ -200,17 +200,35 @@ def search_tickets(city_from, city_to, date_from, date_to):
         flights = driver.find_elements(By.CLASS_NAME, 'flight-search')
 
         tickets = []
+        return_tickets = []
+        to_tickets = []
+        counter = 0
         seen_flight_texts = set()
-
+        collect_return = False
         for flight in flights:
             flight_text = flight.text
             if flight_text not in seen_flight_texts:
                 seen_flight_texts.add(flight_text)
                 lines = list(filter(None, map(str.strip, flight_text.split('\n'))))
-                if lines:
+                if "ЛУЧШАЯ ЦЕНА" in flight_text:
+                    if counter == 1:
+                        collect_return = True
+                        continue
+                    else:
+                        counter += 1
+                        continue
+                if lines and collect_return:
                     ticket = parse_ticket(lines)
                     if ticket:
-                        tickets.append(ticket)
+                        return_tickets.append(ticket)
+                elif lines and collect_return is False:
+                    ticket = parse_ticket(lines)
+                    if ticket:
+                        to_tickets.append(ticket)
+
+                if to_tickets:
+                    tickets.append(to_tickets)
+                    tickets.append(return_tickets)
 
         if tickets:
             save_request_to_cache(city_from, city_to, date_from, date_to, json.dumps(tickets))
