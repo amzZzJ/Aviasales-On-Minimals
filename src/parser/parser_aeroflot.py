@@ -6,6 +6,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 
+from src.instance.flights_db_utils import get_cached_request, save_request_to_cache
+
+
 def parse_flight_segment(lines, start_index):
     """Парсит информацию об одном сегменте рейса."""
     try:
@@ -21,8 +24,6 @@ def parse_flight_segment(lines, start_index):
         }
     except IndexError:
         return None
-
-
 
 
 def extract_departure(lines):
@@ -140,8 +141,12 @@ def parse_ticket(lines):
     return ticket
 
 
-
 def search_tickets(city_from, city_to, date_from, date_to):
+    cached_response = get_cached_request(city_from, city_to, date_from, date_to)
+    if cached_response:
+        print("Using cached response")
+        return json.loads(cached_response)
+
     """Ищет билеты по заданным параметрам."""
     options = webdriver.ChromeOptions()
     driver = webdriver.Chrome(options=options)
@@ -208,6 +213,7 @@ def search_tickets(city_from, city_to, date_from, date_to):
                         tickets.append(ticket)
 
         if tickets:
+            save_request_to_cache(city_from, city_to, date_from, date_to, json.dumps(tickets))
             print(tickets)
             return tickets
         else:
