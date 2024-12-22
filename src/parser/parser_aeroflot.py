@@ -5,19 +5,19 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-from fake_user_agent import user_agent
-import re
 
 def parse_flight_segment(lines, start_index):
     """Парсит информацию об одном сегменте рейса."""
     try:
+        price = extract_price(lines).replace("a", "₽")
+        # print(price)
         return {
             "Вылет": extract_departure(lines),
             "Прилет": extract_arrival(lines),
             "Перевозчик": "Аэрофлот",
             "Рейс": extract_flight_number(lines),
             "Самолет": lines[start_index + 4] if start_index + 4 < len(lines) else "Информация отсутствует",
-            "Цена": extract_price(lines)
+            "Цена": price
         }
     except IndexError:
         return None
