@@ -115,6 +115,11 @@ def parse_ticket(lines, max_price):
 
 
 def search_tickets(city_from, city_to, date_from, date_to, max_price):
+    cached_response = get_cached_request(city_from, city_to, date_from, date_to)
+    if cached_response:
+        print("Using cached response")
+        return json.loads(cached_response)
+
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     driver = webdriver.Chrome(options=options)
@@ -180,6 +185,8 @@ def search_tickets(city_from, city_to, date_from, date_to, max_price):
                         tickets.append(ticket)
 
         if tickets:
+            save_request_to_cache(city_from, city_to, date_from, date_to, json.dumps(tickets))
+            # print(tickets)
             return tickets
         else:
             print("Не удалось найти данные о рейсах.")
