@@ -5,12 +5,11 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
-
+import re
 from src.instance.flights_db_utils import get_cached_request, save_request_to_cache
 
 
 def parse_flight_segment(lines, start_index, max_price):
-    """Парсит информацию об одном сегменте рейса."""
     try:
         price = extract_price(lines).replace("a", "₽")
         price_match = re.search(r'\d[\d\u202f]*', price)
@@ -36,66 +35,35 @@ def parse_flight_segment(lines, start_index, max_price):
 
 
 def extract_departure(lines):
-    """Ищет вылет: строка начинается с времени в формате ЧЧ:ММ."""
     for line in lines:
-        if re.match(r"^\d{2}:\d{2}", line):  # Строка начинается с ЧЧ:ММ
+        if re.match(r"^\d{2}:\d{2}", line):
             return line
     return "Информация отсутствует"
 
+
 def extract_arrival(lines):
-    """Ищет прилет: строка заканчивается временем в формате ЧЧ:ММ."""
     for line in lines:
-        if re.search(r"\d{2}:\d{2}$", line):  # Строка заканчивается на ЧЧ:ММ
+        if re.search(r"\d{2}:\d{2}$", line):
             return line
     return "Информация отсутствует"
 
 
 def extract_price(lines):
-    """Ищет цену в массиве строк."""
     for line in lines:
-        if "от" in line and "a" in line:  # Пример: "от 33 600 Р"
+        if "от" in line and "a" in line:
             return line.strip()
     return "Информация отсутствует"
 
-import re
 
 def extract_flight_number(lines):
-    """Ищет номер рейса в массиве строк."""
     for line in lines:
-        match = re.search(r"\bSU \d+\b", line)  # Пример: SU 1234
+        match = re.search(r"\bSU \d+\b", line)
         if match:
             return match.group(0)
     return "Информация отсутствует"
 
 
-
-def is_valid_time_and_location(line):
-    """Проверяет, является ли строка валидным временем и локацией."""
-    return bool(re.match(r"^\d{2}:\d{2}[A-Z]{3}", line))
-
-
-def is_valid_carrier(line):
-    """Проверяет, является ли строка валидным названием перевозчика."""
-    return bool(line) and len(line.split()) <= 3  # Простая проверка на название перевозчика
-
-
-def is_valid_flight_number(line):
-    """Проверяет, является ли строка валидным номером рейса."""
-    return bool(re.match(r"^[A-Z]{2}\s?\d{3,4}$", line))
-
-
-def is_valid_aircraft(line):
-    """Проверяет, является ли строка валидным названием самолёта."""
-    return "Boeing" in line or "Airbus" in line or "Sukhoi" in line
-
-
-def is_valid_price(line):
-    """Проверяет, является ли строка валидной ценой."""
-    return bool(re.match(r"^от\s\d{1,3}(?:\s?\d{3})*\s[РрAa]$", line))
-
-
 def parse_ticket(lines, max_price):
-    """Парсит информацию о билете (с пересадкой или без)."""
     ticket = {}
     segments = []
     seen_segments = set()
@@ -104,7 +72,6 @@ def parse_ticket(lines, max_price):
     while i < len(lines):
         segment = parse_flight_segment(lines, i, max_price)
         if segment != None:
-            # Создаем ключ для проверки уникальности
             segment_key = (
                 segment['Вылет'].strip(),
                 segment['Прилет'].strip(),
@@ -112,14 +79,12 @@ def parse_ticket(lines, max_price):
                 segment['Рейс'].strip(),
                 segment['Цена'].strip()
             )
-            # Проверяем, что сегмент уникальный
             if segment_key not in seen_segments:
                 segments.append(segment)
-                seen_segments.add(segment_key)  # Добавляем в множество уникальных сегментов
+                seen_segments.add(segment_key)
             else:
                 print(f"Дубликат найден: {segment_key}")
 
-            # Переходим к следующему блоку
             i += 5
             if i < len(lines) and "Пересадка" in lines[i]:
                 segments[-1]["Пересадка"] = lines[i]
@@ -127,9 +92,8 @@ def parse_ticket(lines, max_price):
         else:
             i += 1
 
-    # Убираем лишние блоки, если нужно оставить только один
     if len(segments) > 1:
-        segments = segments[:1]  # Оставляем только первый блок
+        segments = segments[:1]
 
     if segments:
         ticket["segments"] = segments
@@ -151,11 +115,9 @@ def parse_ticket(lines, max_price):
 
 
 def search_tickets(city_from, city_to, date_from, date_to, max_price):
-
-    """Ищет билеты по заданным параметрам."""
     options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
     driver = webdriver.Chrome(options=options)
-    data = []
 
     try:
         driver.get('https://www.aeroflot.ru/ru-ru')
@@ -222,8 +184,6 @@ def search_tickets(city_from, city_to, date_from, date_to, max_price):
         else:
             print("Не удалось найти данные о рейсах.")
     except Exception as e:
-        print(f"AAAA:")
+        print(f"Ошибка при парсинге: {e}")
     finally:
         driver.quit()
-
-
