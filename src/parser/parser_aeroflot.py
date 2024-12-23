@@ -9,11 +9,19 @@ import time
 from src.instance.flights_db_utils import get_cached_request, save_request_to_cache
 
 
-def parse_flight_segment(lines, start_index):
+def parse_flight_segment(lines, start_index, max_price):
     """Парсит информацию об одном сегменте рейса."""
     try:
         price = extract_price(lines).replace("a", "₽")
-        # print(price)
+        price_match = re.search(r'\d[\d\u202f]*', price)
+        if price_match:
+            price = price_match.group(0)
+            cleaned_price = re.sub(r'\s+', '', price)
+            price = int(cleaned_price)
+            if price > int(max_price):
+                return None
+            price = f"от {price} ₽"
+            print("New price:" + price)
         return {
             "Вылет": extract_departure(lines),
             "Прилет": extract_arrival(lines),
@@ -22,7 +30,8 @@ def parse_flight_segment(lines, start_index):
             "Самолет": lines[start_index + 4] if start_index + 4 < len(lines) else "Информация отсутствует",
             "Цена": price
         }
-    except IndexError:
+    except Exception as e:
+        print(e)
         return None
 
 
@@ -85,7 +94,7 @@ def is_valid_price(line):
     return bool(re.match(r"^от\s\d{1,3}(?:\s?\d{3})*\s[РрAa]$", line))
 
 
-def parse_ticket(lines):
+def parse_ticket(lines, max_price):
     """Парсит информацию о билете (с пересадкой или без)."""
     ticket = {}
     segments = []
@@ -93,8 +102,8 @@ def parse_ticket(lines):
     i = 0
 
     while i < len(lines):
-        segment = parse_flight_segment(lines, i)
-        if segment:
+        segment = parse_flight_segment(lines, i, max_price)
+        if segment != None:
             # Создаем ключ для проверки уникальности
             segment_key = (
                 segment['Вылет'].strip(),
@@ -116,7 +125,7 @@ def parse_ticket(lines):
                 segments[-1]["Пересадка"] = lines[i]
                 i += 1
         else:
-            break
+            i += 1
 
     # Убираем лишние блоки, если нужно оставить только один
     if len(segments) > 1:
@@ -141,11 +150,7 @@ def parse_ticket(lines):
     return ticket
 
 
-def search_tickets(city_from, city_to, date_from, date_to):
-    cached_response = get_cached_request(city_from, city_to, date_from, date_to)
-    if cached_response:
-        print("Using cached response")
-        return json.loads(cached_response)
+def search_tickets(city_from, city_to, date_from, date_to, max_price):
 
     """Ищет билеты по заданным параметрам."""
     options = webdriver.ChromeOptions()
@@ -208,13 +213,11 @@ def search_tickets(city_from, city_to, date_from, date_to):
                 seen_flight_texts.add(flight_text)
                 lines = list(filter(None, map(str.strip, flight_text.split('\n'))))
                 if lines:
-                    ticket = parse_ticket(lines)
+                    ticket = parse_ticket(lines, max_price)
                     if ticket:
                         tickets.append(ticket)
 
         if tickets:
-            save_request_to_cache(city_from, city_to, date_from, date_to, json.dumps(tickets))
-            print(tickets)
             return tickets
         else:
             print("Не удалось найти данные о рейсах.")

@@ -43,7 +43,8 @@ def search():
             city_from=city_from,
             city_to=city_to,
             date_from=date_from,
-            date_to=date_to
+            date_to=date_to,
+            max_price=max_price
         )
 
         # Удаление дублирующихся сегментов
